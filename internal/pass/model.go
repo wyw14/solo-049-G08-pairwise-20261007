@@ -13,6 +13,7 @@ const (
 	Tracking  Phase = "tracking"
 	Draining  Phase = "draining"
 	Sealed    Phase = "sealed"
+	Suspended Phase = "suspended"
 	Completed Phase = "completed"
 	Failed    Phase = "failed"
 	Canceled  Phase = "canceled"
@@ -44,6 +45,7 @@ type Pass struct {
 	CurrentAttemptID       string    `json:"current_attempt_id,omitempty"`
 	DecoderEpoch           int64     `json:"decoder_epoch,omitempty"`
 	RecordingSegmentID     string    `json:"recording_segment_id,omitempty"`
+	StormOperationID       string    `json:"storm_operation_id,omitempty"`
 	OwnerStation           string    `json:"owner_station"`
 	OwnerGeneration        int64     `json:"owner_generation"`
 	FailureReason          string    `json:"failure_reason,omitempty"`

@@ -87,6 +87,33 @@ func (q *CommandQueue) IsExecutable(command PointingCommand) bool {
 	return !command.Retired && command.Revision == q.active[command.PassID]
 }
 
+// Retire removes every live pointing command for a pass from the executable
+// set (used while its antenna is held in storm stow); it leaves the historical
+// commands on record with the supplied cause.
+func (q *CommandQueue) Retire(passID, cause string) (int, error) {
+	if passID == "" {
+		return 0, fmt.Errorf("pass is required")
+	}
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	retired := 0
+	for index := range q.commands {
+		if q.commands[index].PassID == passID && !q.commands[index].Retired {
+			q.commands[index].Retired = true
+			q.commands[index].RetireCause = cause
+			retired++
+		}
+	}
+	if retired == 0 {
+		return 0, nil
+	}
+	delete(q.active, passID)
+	if err := store.WriteJSON(q.path, q.commands); err != nil {
+		return 0, err
+	}
+	return retired, nil
+}
+
 func (q *CommandQueue) List(passID string) []PointingCommand {
 	q.mu.RLock()
 	defer q.mu.RUnlock()

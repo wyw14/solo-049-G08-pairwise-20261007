@@ -18,6 +18,7 @@ import (
 	"orbitlink/internal/satellite"
 	"orbitlink/internal/scheduler"
 	"orbitlink/internal/store"
+	"orbitlink/internal/storm"
 	"orbitlink/internal/weather"
 )
 
@@ -49,6 +50,8 @@ type Runtime struct {
 	RecordingState   *passsvc.RecordingState
 	Handovers        *handover.Coordinator
 	Weather          *weather.Coordinator
+	Storm            *storm.Handler
+	StormOperations  *storm.OperationLog
 	sessionsMu       sync.Mutex
 	receiverSessions map[string]*receiver.Session
 }
@@ -115,6 +118,11 @@ func NewRuntime(stateRoot string) (*Runtime, error) {
 	handovers := handover.NewCoordinator(recordingState, recorderManager, trail)
 	stower := antenna.NewStowController(fleet, trail)
 	weatherCoordinator := weather.NewCoordinator(20, rfController, stower, passes, trail)
+	stormOperations, err := storm.NewOperationLog(paths.StormOperations())
+	if err != nil {
+		return nil, err
+	}
+	stormHandler := storm.NewHandler(storm.DefaultThresholds(), rfController, stower, fleet, passes, commands, replanner, stormOperations, trail, clockService)
 	runtime := &Runtime{
 		StateRoot: stateRoot, Paths: paths, EventLog: log, Audit: trail, Catalog: catalog, Ephemerides: ephemerides,
 		Clock: clockService, Windows: windows, Timeline: timeline, Commands: commands,
@@ -123,7 +131,8 @@ func NewRuntime(stateRoot string) (*Runtime, error) {
 		RF: rfController, Recorder: recorderManager, Passes: passes, WindowRecompute: windowRecompute,
 		Replanner: replanner, Extensions: extensions, Deadlines: deadlines, Unlocker: unlocker,
 		Finalizer: finalizer, Attempts: attempts, RecordingState: recordingState,
-		Handovers: handovers, Weather: weatherCoordinator, receiverSessions: make(map[string]*receiver.Session),
+		Handovers: handovers, Weather: weatherCoordinator, Storm: stormHandler, StormOperations: stormOperations,
+		receiverSessions: make(map[string]*receiver.Session),
 	}
 	ephemerides.Subscribe(replanner.ApplyRevision)
 	if err := runtime.seed(); err != nil {
