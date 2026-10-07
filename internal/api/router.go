@@ -48,6 +48,8 @@ func NewRouter(runtime *Runtime) (http.Handler, error) {
 		api.Get("/rf-chains", runtime.listRFChains)
 		api.Post("/rf-chains/{chainID}/plan", runtime.applyRFPlan)
 		api.Post("/rf-chains/{chainID}/transmit", runtime.enableTransmit)
+		api.Post("/storm/assess", runtime.assessStorm)
+		api.Get("/storm/records", runtime.listStormRecords)
 		api.Get("/recordings", runtime.listRecordings)
 		api.Post("/recordings/{segmentID}/frames", runtime.appendFrame)
 		api.Get("/audit", runtime.listAudit)
